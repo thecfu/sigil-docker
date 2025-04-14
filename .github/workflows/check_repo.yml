@@ -13,11 +13,6 @@ jobs:
   check-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure Git Identity
-        run: |
-          git config user.name "🤖 Sigil Helper"
-          git config user.email "sigil-bot@thecfu.de"
-
       - name: Download previous release info
         id: download-artifact
         uses: actions/download-artifact@v4
