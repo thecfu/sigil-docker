@@ -1,5 +1,3 @@
-Here’s a clean and LinuxServer-style README for your Sigil Docker image based on `docker-baseimage-kasmvnc`:
-
 ---
 
 # sigil-ebooks
