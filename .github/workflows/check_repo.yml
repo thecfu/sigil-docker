@@ -56,4 +56,4 @@ jobs:
         with:
           workflow: build.yml
           token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "version":  ${{ steps.get-latest.outputs.latest }}}'
+          inputs: '{ "version":  "${{ steps.get-latest.outputs.latest }}" }'
