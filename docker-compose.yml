@@ -1,0 +1,18 @@
+---
+services:
+  sigil:
+    image: ghcr.io/thecfu/sigil-docker:latest
+    container_name: sigil
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /path/to/books:/books
+      - /path/to/config:/home/abc/.local/share/sigil-ebook
+    ports:
+      - 3000:3000
+      - 3001:3001
+    restart: unless-stopped
