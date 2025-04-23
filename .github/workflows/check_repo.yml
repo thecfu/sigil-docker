@@ -6,54 +6,50 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: write
-  contents: read
+  contents: write  # Needed to create releases
 
 jobs:
   check-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Download previous release info
-        id: download-artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: latestrelease
-        continue-on-error: true  # first run = no artifact yet
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Fetch latest release from target repo
+      - name: Fetch latest Sigil release
         id: get-latest
         run: |
-          LATEST=$(curl -s https://api.github.com/repos/Sigil-Ebook/Sigil/releases/latest | jq -r .tag_name)
-          echo "latest=$LATEST" >> $GITHUB_OUTPUT
+          curl -s https://api.github.com/repos/Sigil-Ebook/Sigil/releases/latest \
+            | jq -r .tag_name > latest-upstream.txt
+          echo "latest=$(cat latest-upstream.txt)" >> $GITHUB_OUTPUT
 
-      - name: Compare and decide
+      - name: Get last known release version from GitHub
+        id: get-prev
+        run: |
+          PREV=$(gh release list --repo owner/repo --limit 1 --json tagName -q ".[0].tagName" || echo "none")
+          echo "previous=$PREV" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
         id: compare
         run: |
-          PREV=$(cat latest.txt 2>/dev/null || echo "none")
-          echo "Previous: $PREV"
-          echo "Latest: ${{ steps.get-latest.outputs.latest }}"
+          PREV="${{ steps.get-prev.outputs.previous }}"
+          LATEST="${{ steps.get-latest.outputs.latest }}"
 
-          if [ "$PREV" != "${{ steps.get-latest.outputs.latest }}" ]; then
+          echo "Previous: $PREV"
+          echo "Latest: $LATEST"
+
+          if [ "$PREV" != "$LATEST" ]; then
             echo "new_release=true" >> $GITHUB_OUTPUT
           else
             echo "new_release=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Save latest tag if new
+      - name: Create GitHub Release
         if: steps.compare.outputs.new_release == 'true'
-        run: echo "${{ steps.get-latest.outputs.latest }}" > latest.txt
-
-      - name: Upload new tag
-        if: steps.compare.outputs.new_release == 'true'
-        uses: actions/upload-artifact@v4
+        uses: softprops/action-gh-release@v1
         with:
-          name: latestrelease
-          path: latest.txt
-
-      - name: Trigger build workflow
-        if: steps.compare.outputs.new_release == 'true'
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: build.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "version":  "${{ steps.get-latest.outputs.latest }}" }'
+          tag_name: ${{ steps.get-latest.outputs.latest }}
+          name: Release ${{ steps.get-latest.outputs.latest }}
+          body: |
+            Automated release triggered by new upstream Sigil release.
+          draft: false
+          prerelease: false
