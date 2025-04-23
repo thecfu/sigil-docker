@@ -17,7 +17,7 @@ jobs:
         id: download-artifact
         uses: actions/download-artifact@v4
         with:
-          name: latest-release
+          name: latestrelease
         continue-on-error: true  # first run = no artifact yet
 
       - name: Fetch latest release from target repo
@@ -47,7 +47,7 @@ jobs:
         if: steps.compare.outputs.new_release == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: latest-release
+          name: latestrelease
           path: latest.txt
 
       - name: Trigger build workflow
