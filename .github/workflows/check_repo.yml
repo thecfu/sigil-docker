@@ -15,6 +15,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Configure Git Identity
+        run: |
+          git config user.name "🤖 Sigil Helper"
+          git config user.email "sigil-bot@thecfu.de"
+
       - name: Fetch latest Sigil release
         id: get-latest
         run: |
