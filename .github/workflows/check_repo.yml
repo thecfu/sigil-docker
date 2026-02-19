@@ -29,6 +29,8 @@ jobs:
 
       - name: Get last known release version from GitHub
         id: get-prev
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           PREV=$(gh release list --repo owner/repo --limit 1 --json tagName -q ".[0].tagName" || echo "none")
           echo "previous=$PREV" >> $GITHUB_OUTPUT
