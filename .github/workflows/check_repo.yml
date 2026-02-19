@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PREV=$(gh release list --repo owner/repo --limit 1 --json tagName -q ".[0].tagName" || echo "none")
+          PREV=$(gh release list --repo Sigil-Ebook/Sigil --limit 1 --json tagName -q ".[0].tagName" || exit 1)
           echo "previous=$PREV" >> $GITHUB_OUTPUT
 
       - name: Compare versions
