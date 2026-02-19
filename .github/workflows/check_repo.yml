@@ -2,61 +2,47 @@ name: Check New Release
 
 on:
   schedule:
-    - cron: '0 10 * * *'  # Every day at 10:00 AM UTC
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write  # Needed to create releases
+  contents: write
 
 jobs:
   check-release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Configure Git Identity
+      - name: Configure Git identity
         run: |
           git config user.name "🤖 Sigil Helper"
           git config user.email "sigil-bot@thecfu.de"
 
-      - name: Fetch latest Sigil release
-        id: get-latest
-        run: |
-          curl -s https://api.github.com/repos/Sigil-Ebook/Sigil/releases/latest \
-            | jq -r .tag_name > latest-upstream.txt
-          echo "latest=$(cat latest-upstream.txt)" >> $GITHUB_OUTPUT
-
-      - name: Get last known release version from GitHub
-        id: get-prev
+      - name: Get upstream latest tag
+        id: upstream
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PREV=$(gh release list --repo Sigil-Ebook/Sigil --limit 1 --json tagName -q ".[0].tagName" || exit 1)
-          echo "previous=$PREV" >> $GITHUB_OUTPUT
+          TAG=$(gh api repos/Sigil-Ebook/Sigil/releases/latest --jq .tag_name)
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Compare versions
-        id: compare
+      - name: Get last mirrored tag
+        id: mirrored
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          PREV="${{ steps.get-prev.outputs.previous }}"
-          LATEST="${{ steps.get-latest.outputs.latest }}"
+          TAG=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-          echo "Previous: $PREV"
-          echo "Latest: $LATEST"
-
-          if [ "$PREV" != "$LATEST" ]; then
-            echo "new_release=true" >> $GITHUB_OUTPUT
-          else
-            echo "new_release=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create GitHub Release
-        if: steps.compare.outputs.new_release == 'true'
-        uses: softprops/action-gh-release@v1
+      - name: Create release if new
+        if: steps.upstream.outputs.tag != steps.mirrored.outputs.tag
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.get-latest.outputs.latest }}
-          name: Release ${{ steps.get-latest.outputs.latest }}
-          body: |
-            Automated release triggered by new upstream Sigil release.
+          tag_name: ${{ steps.upstream.outputs.tag }}
+          name: Release ${{ steps.upstream.outputs.tag }}
+          body: Automated release triggered by new upstream Sigil release.
           draft: false
           prerelease: false
